@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fresnel Diffraction Simulator — Near-Field Wave Optics</title>
+  <!-- Google Fonts for Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* --- CSS Reset & Variables --- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    :root {
+      --bg-dark: #070913;
+      --bg-radial: radial-gradient(circle at 50% 50%, #0d1222 0%, #060810 100%);
+      --card-bg: rgba(15, 22, 42, 0.65);
+      --card-border: rgba(255, 255, 255, 0.07);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-default: #10b981; /* Fallback green */
+      --active-tab-bg: rgba(255, 255, 255, 0.08);
+      --control-bg: rgba(11, 15, 28, 0.8);
+      --control-border: rgba(255, 255, 255, 0.05);
+      --font-ui: 'Inter', sans-serif;
+      --font-title: 'Outfit', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+    
+    body {
+      background: var(--bg-radial);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    
+    /* --- Layout Structure --- */
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    
+    h1 {
+      font-family: var(--font-title);
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      font-weight: 300;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    
+    @media (max-width: 1100px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* --- Reusable Glass Card Components --- */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    }
+    
+    .panel-title {
+      font-family: var(--font-title);
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      letter-spacing: -0.01em;
+    }
+    
+    /* --- Sidebar Controls Styling --- */
+    .controls-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .control-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .control-val {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    
+    /* Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--text-main);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      border: 2px solid var(--bg-dark);
+      cursor: pointer;
+      transition: transform 0.1s ease, background-color 0.3s ease;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    
+    /* Segmented Buttons for Presets */
+    .aperture-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    
+    .btn-preset {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--control-border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      padding: 10px 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-preset:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    .btn-preset.active {
+      background: var(--active-tab-bg);
+      color: var(--text-main);
+      border-color: var(--accent-default);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+    }
+    
+    /* Toggle Selectors */
+    .toggle-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: rgba(0, 0, 0, 0.2);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--control-border);
+    }
+    
+    .btn-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    
+    .btn-toggle.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+    
+    /* --- Right Visualization Panels Layout --- */
+    .visuals-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    
+    .vis-top-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    
+    @media (max-width: 800px) {
+      .vis-top-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      background: #02040a;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: crosshair;
+    }
+    
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Drawing board tools styling */
+    .paint-tools {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      gap: 10px;
+    }
+    
+    .btn-action {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--control-border);
+      border-radius: 6px;
+      color: var(--text-main);
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    /* Vis Bottom Row Layout */
+    .vis-bottom-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+    
+    @media (max-width: 950px) {
+      .vis-bottom-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .plot-container {
+      position: relative;
+      width: 100%;
+      height: 250px;
+      background: #02040a;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    
+    /* --- Info & Educational Panel --- */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    @media (max-width: 600px) {
+      .metrics-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .metric-card {
+      background: rgba(11, 15, 28, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    
+    .metric-card .lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    
+    .metric-card .val {
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    
+    .status-alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-width: 1px;
+      border-style: solid;
+    }
+    
+    .alert-info {
+      background: rgba(16, 185, 129, 0.07);
+      border-color: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+    
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.07);
+      border-color: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+    
+    .educational-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    
+    .educational-text h3 {
+      font-family: var(--font-title);
+      color: var(--text-main);
+      font-size: 1.1rem;
+      margin-top: 18px;
+      margin-bottom: 8px;
+    }
+    
+    .educational-text p {
+      margin-bottom: 12px;
+    }
+    
+    .educational-text code {
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: var(--text-main);
+    }
+    
+    /* Dynamic Track Style for Wavelength Slider */
+    #slider-wl-track {
+      background: linear-gradient(to right, 
+        #7d00ff 0%,   /* 380 nm */
+        #0000ff 17%,  /* 440 nm */
+        #00ffff 30%,  /* 490 nm */
+        #00ff00 43%,  /* 510 nm */
+        #ffff00 63%,  /* 580 nm */
+        #ff7f00 80%,  /* 645 nm */
+        #ff0000 100%  /* 750 nm */
+      );
+      height: 8px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <h1>FRESNEL DIFFRACTION SIMULATOR</h1>
+    <p>Interactive near-field wave propagation engine using Angular Spectrum Method & 2D Fast Fourier Transform.</p>
+  </header>
+  
+  <!-- Dashboard Grid -->
+  <div class="dashboard-grid">
+    
+    <!-- Left Column: Controls (glass-card) -->
+    <div class="glass-card controls-panel">
+      <h2 class="panel-title"><span>Simulation Settings</span></h2>
+      
+      <!-- Preset Apertures -->
+      <div class="control-group">
+        <label class="control-label">Aperture Geometry</label>
+        <div class="aperture-grid">
+          <button class="btn-preset active" onclick="setPreset('slit')">Single Slit</button>
+          <button class="btn-preset" onclick="setPreset('double')">Double Slit</button>
+          <button class="btn-preset" onclick="setPreset('circle')">Circular Aperture</button>
+          <button class="btn-preset" onclick="setPreset('rect')">Rectangular</button>
+          <button class="btn-preset" onclick="setPreset('triangle')">Triangle</button>
+          <button class="btn-preset" onclick="setPreset('zone')">Zone Plate</button>
+          <button class="btn-preset" style="grid-column: span 2;" onclick="setPreset('custom')">✏️ Custom Draw Pad</button>
+        </div>
+      </div>
+      
+      <!-- Wavelength -->
+      <div class="control-group">
+        <div class="control-label">
+          <span>Wavelength (λ)</span>
+          <span class="control-val" id="wl-val">532 nm</span>
+        </div>
+        <div id="slider-wl-track" style="margin-bottom:-10px; border-radius:4px; opacity:0.85;">
+          <input type="range" id="param-wl" min="380" max="750" value="532" style="background:transparent;" oninput="onParamChange()">
+        </div>
+      </div>
+      
+      <!-- Propagation Distance (z) -->
+      <div class="control-group">
+        <div class="control-label">
+          <span>Screen Distance (z)</span>
+          <span class="control-val" id="dist-val">2.50 cm</span>
+        </div>
+        <!-- Nonlinear slider mapping to give detail at micro-scale and range to centimeter-scale -->
+        <input type="range" id="param-z-slider" min="0" max="100" value="45" oninput="onParamChange()">
+      </div>
+      
+      <!-- Spatial Scale / Grid physical width L -->
+      <div class="control-group">
+        <div class="control-label">
+          <span>Aperture View Width (L)</span>
+          <span class="control-val" id="gridwidth-val">6.0 mm</span>
+        </div>
+        <input type="range" id="param-L" min="20" max="150" value="60" oninput="onParamChange()">
+      </div>
+      
+      <!-- Dynamic Presets Params -->
+      <div id="preset-params-section">
+        <!-- Will be dynamically injected based on selected preset -->
+      </div>
+      
+      <!-- Screen Zoom Slider -->
+      <div class="control-group">
+        <div class="control-label">
+          <span>Screen Zoom (Display)</span>
+          <span class="control-val" id="zoom-val">1.0x</span>
+        </div>
+        <input type="range" id="param-zoom" min="10" max="50" value="10" oninput="onParamChange()">
+      </div>
+      
+      <!-- Viz options -->
+      <div class="control-group">
+        <label class="control-label">Contrast Scaling</label>
+        <div class="toggle-row">
+          <button class="btn-toggle active" id="btn-scale-lin" onclick="setScaleMode('lin')">Linear</button>
+          <button class="btn-toggle" id="btn-scale-gamma" onclick="setScaleMode('gamma')">Gamma (0.4)</button>
+          <button class="btn-toggle" id="btn-scale-log" onclick="setScaleMode('log')">Log (HDR)</button>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <label class="control-label">Color Palette</label>
+        <div class="toggle-row">
+          <button class="btn-toggle active" id="btn-color-mono" onclick="setColorMode('laser')">Spectral</button>
+          <button class="btn-toggle" id="btn-color-heat" onclick="setColorMode('thermal')">Magma</button>
+          <button class="btn-toggle" id="btn-color-gray" onclick="setColorMode('gray')">Grayscale</button>
+        </div>
+      </div>
+      
+    </div>
+    
+    <!-- Right Column: Visualizations Grid -->
+    <div class="visuals-container">
+      
+      <!-- Top Row: Aperture and 2D Pattern Screen -->
+      <div class="vis-top-row">
+        
+        <!-- Aperture Panel -->
+        <div class="glass-card">
+          <h2 class="panel-title">
+            <span>Aperture Mask (U₀)</span>
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;" id="aperture-info">256 × 256 Grid</span>
+          </h2>
+          <div class="canvas-container" id="aperture-canvas-container">
+            <canvas id="canvas-aperture"></canvas>
+          </div>
+          <!-- Custom Drawing Controls -->
+          <div class="paint-tools" id="paint-tools-panel" style="display:none;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:0.75rem; color:var(--text-muted);">Brush:</span>
+              <input type="range" id="brush-size" min="3" max="25" value="8" style="width:70px;">
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-action" onclick="loadCustomPreset('FRESNEL')">Load Word</button>
+              <button class="btn-action" onclick="clearCustomDrawing()">Clear</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 2D Screen Pattern -->
+        <div class="glass-card">
+          <h2 class="panel-title"><span>Diffraction Pattern (2D Screen)</span></h2>
+          <div class="canvas-container">
+            <canvas id="canvas-screen"></canvas>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- Bottom Row: 1D Graph and 3D wireframe -->
+      <div class="vis-bottom-row">
+        
+        <!-- 1D Plot -->
+        <div class="glass-card">
+          <h2 class="panel-title"><span>1D Cross-Section (Central Horizontal Slice)</span></h2>
+          <div class="plot-container">
+            <canvas id="canvas-1d-plot"></canvas>
+          </div>
+        </div>
+        
+        <!-- 3D Surface Mesh -->
+        <div class="glass-card">
+          <h2 class="panel-title">
+            <span>3D Intensity Surface</span>
+            <span style="font-size:0.75rem; color:var(--text-dim); font-weight:normal;">Drag to Rotate</span>
+          </h2>
+          <div class="plot-container" style="cursor:grab;" id="container-3d">
+            <canvas id="canvas-3d-plot"></canvas>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- Educational Explanation Panel -->
+      <div class="glass-card">
+        <h2 class="panel-title"><span>Wave Optics Analysis & Mechanics</span></h2>
+        
+        <div class="metrics-row">
+          <div class="metric-card">
+            <div class="lbl">Fresnel Number (F)</div>
+            <div class="val" id="metric-fresnel-num">0.00</div>
+          </div>
+          <div class="metric-card">
+            <div class="lbl">Grid Resolution (Δx)</div>
+            <div class="val" id="metric-resolution">23.4 μm</div>
+          </div>
+          <div class="metric-card">
+            <div class="lbl">Regime</div>
+            <div class="val" id="metric-regime">Near-Field</div>
+          </div>
+        </div>
+        
+        <!-- Dynamic regime info alert -->
+        <div class="status-alert alert-info" id="regime-alert">
+          <strong>Regime Info:</strong> Near-field Fresnel diffraction is occurring. The wave preserves the boundary shadows, but shows high-frequency boundary fringes.
+        </div>
+        
+        <div class="educational-text">
+          <h3>The Fresnel Regime</h3>
+          <p>
+            Unlike **Fraunhofer diffraction** (which describes light in the *far-field* where rays are treated as parallel), **Fresnel diffraction** calculates the light field in the *near-field*. In this regime, the curvature of the wavefront cannot be neglected, and the light pattern is highly sensitive to the distance $z$ from the aperture.
+          </p>
+          <p>
+            The physical regime is characterized by the **Fresnel Number** $F = \frac{a^2}{\lambda z}$, where $a$ is the characteristic aperture size, $\lambda$ is the wavelength, and $z$ is the propagation distance:
+          </p>
+          <ul>
+            <li>$F \gg 1$: **Geometric Optics Regime**. The pattern is a sharp shadow of the aperture, with tiny fringes at the boundaries.</li>
+            <li>$F \approx 1$: **Fresnel Near-Field**. Strong interference effects occur. You see extreme "ringing" at slit boundaries, constructive/destructive centers, and focusing effects.</li>
+            <li>$F \ll 1$: **Fraunhofer Far-Field**. The pattern becomes the Fourier Transform of the aperture. The geometric shape is completely lost, and only angular lobes remain.</li>
+          </ul>
+          <h3>Try this interesting physics experiment:</h3>
+          <p>
+            Choose the **Circular Aperture** preset and set the distance $z$ to around 2.0 cm. Look closely at the center of the diffraction pattern. You will see a small, bright peak at the absolute center of the dark shadow. This is the famous **Poisson's Spot** (or Arago Spot). It occurs because spherical waves diffracting from the circular boundary travel exactly equal distances to the central axis, resulting in constructive interference!
+          </p>
+          <p>
+            Now, switch to the **Zone Plate** preset. Set the distance $z$ to match the **Design Focal Length** shown in the parameters (e.g. 15 cm). You will observe a massive, sharp intensity peak at the center. This is because the zone plate blocks half-period zones that would cause destructive interference, acting as a focusing lens via diffraction alone!
+          </p>
+        </div>
+      </div>
+      
+    </div>
+    
+  </div>
+</div>
+
+<script>
+  /* ==========================================================================
+     PHYSICS ENGINE & FFT IMPLEMENTATION
+     ========================================================================== */
+     
+  // 1D Radix-2 Cooley-Tukey FFT in-place for typed arrays
+  // N must be a power of 2. stride and offset allow in-place row/column access.
+  function fft1D(re, im, N, stride, offset, inverse) {
+    // 1. Bit-reversal sorting
+    let j = 0;
+    for (let i = 0; i < N; i++) {
+      if (i < j) {
+        let idxI = offset + i * stride;
+        let idxJ = offset + j * stride;
+        let tempRe = re[idxI];
+        let tempIm = im[idxI];
+        re[idxI] = re[idxJ];
+        im[idxI] = im[idxJ];
+        re[idxJ] = tempRe;
+        im[idxJ] = tempIm;
+      }
+      let m = N >> 1;
+      while (m >= 1 && j >= m) {
+        j -= m;
+        m >>= 1;
+      }
+      j += m;
+    }
+    
+    // 2. Cooley-Tukey butterfly calculations
+    const dir = inverse ? 1 : -1;
+    for (let len = 2; len <= N; len <<= 1) {
+      let ang = (2 * Math.PI / len) * dir;
+      let wlenRe = Math.cos(ang);
+      let wlenIm = Math.sin(ang);
+      for (let i = 0; i < N; i += len) {
+        let wRe = 1.0;
+        let wIm = 0.0;
+        let halfLen = len >> 1;
+        for (let k = 0; k < halfLen; k++) {
+          let idx1 = offset + (i + k) * stride;
+          let idx2 = offset + (i + k + halfLen) * stride;
+          
+          let uRe = re[idx1];
+          let uIm = im[idx1];
+          
+          // complex multiplication t = w * array[idx2]
+          let tRe = re[idx2] * wRe - im[idx2] * wIm;
+          let tIm = re[idx2] * wIm + im[idx2] * wRe;
+          
+          re[idx1] = uRe + tRe;
+          im[idx1] = uIm + tIm;
+          re[idx2] = uRe - tRe;
+          im[idx2] = uIm - tIm;
+          
+          // Rotate twiddle factor: w = w * wlen
+          let nextWRe = wRe * wlenRe - wIm * wlenIm;
+          let nextWIm = wRe * wlenIm + wIm * wlenRe;
+          wRe = nextWRe;
+          wIm = nextWIm;
+        }
+      }
+    }
+    
+    // Divide by N for inverse FFT
+    if (inverse) {
+      for (let i = 0; i < N; i++) {
+        let idx = offset + i * stride;
+        re[idx] /= N;
+        im[idx] /= N;
+      }
+    }
+  }
+  
+  // 2D Fast Fourier Transform
+  function fft2D(re, im, N, inverse) {
+    // Row-wise FFT
+    for (let y = 0; y < N; y++) {
+      fft1D(re, im, N, 1, y * N, inverse);
+    }
+    // Column-wise FFT
+    for (let x = 0; x < N; x++) {
+      fft1D(re, im, N, N, x, inverse);
+    }
+  }
+
+  // Wavelength to RGB color mapping
+  function wlToRGB(wl) {
+    let r = 0, g = 0, b = 0;
+    if (wl >= 380 && wl < 440) {
+      r = -(wl - 440) / (440 - 380);
+      b = 1.0;
+    } else if (wl >= 440 && wl < 490) {
+      g = (wl - 440) / (490 - 440);
+      b = 1.0;
+    } else if (wl >= 490 && wl < 510) {
+      g = 1.0;
+      b = -(wl - 510) / (510 - 490);
+    } else if (wl >= 510 && wl < 580) {
+      r = (wl - 510) / (580 - 510);
+      g = 1.0;
+    } else if (wl >= 580 && wl < 645) {
+      r = 1.0;
+      g = -(wl - 645) / (645 - 580);
+    } else if (wl >= 645 && wl <= 780) {
+      r = 1.0;
+    }
+    
+    // Intensity factor near the limits of human visibility
+    let factor = 0.0;
+    if (wl >= 380 && wl < 420) {
+      factor = 0.3 + 0.7 * (wl - 380) / (420 - 380);
+    } else if (wl >= 420 && wl < 701) {
+      factor = 1.0;
+    } else if (wl >= 701 && wl <= 780) {
+      factor = 0.3 + 0.7 * (780 - wl) / (780 - 701);
+    }
+    
+    return [
+      Math.round(r * factor * 255),
+      Math.round(g * factor * 255),
+      Math.round(b * factor * 255)
+    ];
+  }
+  
+  // Wavelength to color hex string helper
+  function rgbToHex(r, g, b) {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  /* ==========================================================================
+     GLOBAL SIMULATION STATE
+     ========================================================================== */
+  const N = 256; // Grid resolution (256x256)
+  
+  // Aperture field arrays
+  const apertureMask = new Float32Array(N * N);
+  
+  // Custom drawing canvas representation
+  const customDrawingMask = new Float32Array(N * N);
+  
+  // Propagation result intensities
+  const screenIntensity = new Float32Array(N * N);
+  
+  // Parameters
+  let activePreset = 'slit';
+  let lambda = 532e-9;      // Wavelength in m
+  let distanceZ = 0.025;     // Screen distance in m
+  let gridL = 0.006;        // Grid physical size in m
+  let scaleMode = 'lin';     // lin, gamma, log
+  let colorMode = 'laser';   // laser, thermal, gray
+  let displayZoom = 1.0;     // 1.0 to 5.0
+  
+  // 3D rotation angles
+  let yaw3d = -0.65;
+  let pitch3d = 0.75;
+  
+  // Preset parameters
+  let param_slitWidth = 0.0008; // 0.8 mm
+  let param_doubleSlitWidth = 0.0003;
+  let param_doubleSlitSep = 0.0012;
+  let param_rectWidthX = 0.0008;
+  let param_rectWidthY = 0.0016;
+  let param_circleRadius = 0.0006;
+  let param_triangleSide = 0.0012;
+  let param_zoneFocal = 0.15; // 15 cm focal distance
+  let param_zoneRings = 10;
+  
+  // UI Cache
+  const canvasAperture = document.getElementById('canvas-aperture');
+  const canvasScreen = document.getElementById('canvas-screen');
+  const canvas1d = document.getElementById('canvas-1d-plot');
+  const canvas3d = document.getElementById('canvas-3d-plot');
+  
+  const ctxAperture = canvasAperture.getContext('2d');
+  const ctxScreen = canvasScreen.getContext('2d');
+  const ctx1d = canvas1d.getContext('2d');
+  const ctx3d = canvas3d.getContext('2d');
+
+  /* ==========================================================================
+     UI PARAMETERS SYNCING & INPUT HANDLERS
+     ========================================================================== */
+     
+  // Setup standard preset layout injects
+  const presetParamsHTML = {
+    slit: `
+      <div class="control-group">
+        <div class="control-label">
+          <span>Slit Width (w)</span>
+          <span class="control-val" id="val-slit-w">0.80 mm</span>
+        </div>
+        <input type="range" id="param-slit-w" min="1" max="30" value="8" oninput="updatePresetParams()">
+      </div>
+    `,
+    double: `
+      <div class="control-group">
+        <div class="control-label">
+          <span>Slit Width (w)</span>
+          <span class="control-val" id="val-dslit-w">0.30 mm</span>
+        </div>
+        <input type="range" id="param-dslit-w" min="1" max="15" value="3" oninput="updatePresetParams()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">
+          <span>Slit Separation (d)</span>
+          <span class="control-val" id="val-dslit-sep">1.20 mm</span>
+        </div>
+        <input type="range" id="param-dslit-sep" min="4" max="40" value="12" oninput="updatePresetParams()">
+      </div>
+    `,
+    rect: `
+      <div class="control-group">
+        <div class="control-label">
+          <span>Aperture Width X</span>
+          <span class="control-val" id="val-rect-x">0.80 mm</span>
+        </div>
+        <input type="range" id="param-rect-x" min="1" max="30" value="8" oninput="updatePresetParams()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">
+          <span>Aperture Height Y</span>
+          <span class="control-val" id="val-rect-y">1.60 mm</span>
+        </div>
+        <input type="range" id="param-rect-y" min="1" max="30" value="16" oninput="updatePresetParams()">
+      </div>
+    `,
+    circle: `
+      <div class="control-group">
+        <div class="control-label">
+          <span>Aperture Radius (R)</span>
+          <span class="control-val" id="val-circle-r">0.60 mm</span>
+        </div>
+        <input type="range" id="param-circle-r" min="1" max="25" value="6" oninput="updatePresetParams()">
+      </div>
+    `,
+    triangle: `
+      <div class="control-group">
+        <div class="control-label">
+          <span>Side Length (s)</span>
+          <span class="control-val" id="val-tri-s">1.20 mm</span>
+        </div>
+        <input type="range" id="param-tri-s" min="2" max="30" value="12" oninput="updatePresetParams()">
+      </div>
+    `,
+    zone: `
+      <div class="control-group">
+        <div class="control-label">
+          <span>Design Focal Len (f)</span>
+          <span class="control-val" id="val-zone-f">15.0 cm</span>
+        </div>
+        <input type="range" id="param-zone-f" min="5" max="35" value="15" oninput="updatePresetParams()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">
+          <span>Number of Rings (N)</span>
+          <span class="control-val" id="val-zone-n">10</span>
+        </div>
+        <input type="range" id="param-zone-n" min="2" max="20" value="10" oninput="updatePresetParams()">
+      </div>
+    `,
+    custom: `
+      <div class="control-group">
+        <div class="control-label">
+          <span>Drawing Brush Size</span>
+          <span class="control-val" id="val-brush">8 px</span>
+        </div>
+      </div>
+    `
+  };
+  
+  function setPreset(presetName) {
+    activePreset = presetName;
+    
+    // Toggle active classes on preset buttons
+    const btns = document.querySelectorAll('.btn-preset');
+    btns.forEach(btn => {
+      if (btn.innerText.toLowerCase().includes(presetName.slice(0, 4))) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    
+    // Update presets parameters block
+    document.getElementById('preset-params-section').innerHTML = presetParamsHTML[presetName] || '';
+    
+    // Show/hide painting tools panel
+    const drawTools = document.getElementById('paint-tools-panel');
+    if (presetName === 'custom') {
+      drawTools.style.display = 'flex';
+      // Hook custom brush size input listener
+      const brushSlider = document.getElementById('brush-size');
+      brushSlider.oninput = function() {
+        document.getElementById('val-brush').innerText = this.value + ' px';
+      };
+      // Load default custom shape if custom drawing is clean
+      let isDrawEmpty = true;
+      for (let i = 0; i < N * N; i++) {
+        if (customDrawingMask[i] > 0) { isDrawEmpty = false; break; }
+      }
+      if (isDrawEmpty) {
+        loadCustomPreset('FRESNEL');
+      }
+    } else {
+      drawTools.style.display = 'none';
+    }
+    
+    // Sync slider values back into global state
+    updatePresetParams();
+    calculateAndRender();
+  }
+  
+  function updatePresetParams() {
+    if (activePreset === 'slit') {
+      let val = parseFloat(document.getElementById('param-slit-w').value);
+      param_slitWidth = (val / 10) * 1e-3; // in meters
+      document.getElementById('val-slit-w').innerText = (val / 10).toFixed(2) + ' mm';
+    }
+    else if (activePreset === 'double') {
+      let valW = parseFloat(document.getElementById('param-dslit-w').value);
+      let valSep = parseFloat(document.getElementById('param-dslit-sep').value);
+      // Clamp Separation to be at least Width to prevent overlapping slits
+      if (valSep < valW + 2) {
+        valSep = valW + 2;
+        document.getElementById('param-dslit-sep').value = valSep;
+      }
+      param_doubleSlitWidth = (valW / 10) * 1e-3;
+      param_doubleSlitSep = (valSep / 10) * 1e-3;
+      document.getElementById('val-dslit-w').innerText = (valW / 10).toFixed(2) + ' mm';
+      document.getElementById('val-dslit-sep').innerText = (valSep / 10).toFixed(2) + ' mm';
+    }
+    else if (activePreset === 'rect') {
+      let valX = parseFloat(document.getElementById('param-rect-x').value);
+      let valY = parseFloat(document.getElementById('param-rect-y').value);
+      param_rectWidthX = (valX / 10) * 1e-3;
+      param_rectWidthY = (valY / 10) * 1e-3;
+      document.getElementById('val-rect-x').innerText = (valX / 10).toFixed(2) + ' mm';
+      document.getElementById('val-rect-y').innerText = (valY / 10).toFixed(2) + ' mm';
+    }
+    else if (activePreset === 'circle') {
+      let val = parseFloat(document.getElementById('param-circle-r').value);
+      param_circleRadius = (val / 10) * 1e-3;
+      document.getElementById('val-circle-r').innerText = (val / 10).toFixed(2) + ' mm';
+    }
+    else if (activePreset === 'triangle') {
+      let val = parseFloat(document.getElementById('param-tri-s').value);
+      param_triangleSide = (val / 10) * 1e-3;
+      document.getElementById('val-tri-s').innerText = (val / 10).toFixed(2) + ' mm';
+    }
+    else if (activePreset === 'zone') {
+      let valF = parseFloat(document.getElementById('param-zone-f').value);
+      let valN = parseInt(document.getElementById('param-zone-n').value);
+      param_zoneFocal = valF * 1e-2; // in m
+      param_zoneRings = valN;
+      document.getElementById('val-zone-f').innerText = valF.toFixed(1) + ' cm';
+      document.getElementById('val-zone-n').innerText = valN;
+    }
+    
+    // Trigger redraw when preset params slider changes
+    calculateAndRender();
+  }
+  
+  function onParamChange() {
+    // Read Wavelength
+    let wlNm = parseInt(document.getElementById('param-wl').value);
+    lambda = wlNm * 1e-9;
+    document.getElementById('wl-val').innerText = wlNm + ' nm';
+    
+    // Read Distance (Quadratic scale)
+    let zVal = parseFloat(document.getElementById('param-z-slider').value);
+    // scale from 0 to 50cm using (val/100)^3 * 0.5m
+    distanceZ = Math.pow(zVal / 100, 3) * 0.5;
+    
+    if (distanceZ < 0.01) {
+      document.getElementById('dist-val').innerText = (distanceZ * 1000).toFixed(2) + ' mm';
+    } else {
+      document.getElementById('dist-val').innerText = (distanceZ * 100).toFixed(2) + ' cm';
+    }
+    
+    // Read Grid width L
+    let Lval = parseFloat(document.getElementById('param-L').value);
+    gridL = (Lval / 10) * 1e-3; // from 2mm to 15mm
+    document.getElementById('gridwidth-val').innerText = (Lval / 10).toFixed(1) + ' mm';
+    
+    // Read Screen Display Zoom
+    let zoomVal = parseFloat(document.getElementById('param-zoom').value);
+    displayZoom = zoomVal / 10;
+    document.getElementById('zoom-val').innerText = (zoomVal / 10).toFixed(1) + 'x';
+    
+    // Synchronize UI laser color glows
+    let rgb = wlToRGB(wlNm);
+    let hex = rgbToHex(rgb[0], rgb[1], rgb[2]);
+    document.documentElement.style.setProperty('--accent-default', hex);
+    
+    // Apply styling tweaks
+    document.getElementById('slider-wl-track').style.boxShadow = `0 0 10px ${hex}44`;
+    
+    calculateAndRender();
+  }
+  
+  function setScaleMode(mode) {
+    scaleMode = mode;
+    ['lin', 'gamma', 'log'].forEach(m => {
+      let btn = document.getElementById('btn-scale-' + m);
+      if (m === mode) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    calculateAndRender();
+  }
+  
+  function setColorMode(mode) {
+    colorMode = mode;
+    ['mono', 'heat', 'gray'].forEach(m => {
+      let btn = document.getElementById('btn-color-' + m);
+      if ((m === 'mono' && mode === 'laser') || (m === 'heat' && mode === 'thermal') || (m === 'gray' && mode === 'gray')) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    calculateAndRender();
+  }
+
+  /* ==========================================================================
+     CUSTOM INTERACTIVE DRAWING
+     ========================================================================== */
+     
+  let isDrawing = false;
+  
+  function getMousePos(canvas, evt) {
+    let rect = canvas.getBoundingClientRect();
+    // Scale coords to N x N canvas coordinates
+    return {
+      x: Math.round((evt.clientX - rect.left) / rect.width * N),
+      y: Math.round((evt.clientY - rect.top) / rect.height * N)
+    };
+  }
+  
+  function drawBrushStroke(pos, size) {
+    for (let dy = -size; dy <= size; dy++) {
+      for (let dx = -size; dx <= size; dx++) {
+        let px = pos.x + dx;
+        let py = pos.y + dy;
+        if (px >= 0 && px < N && py >= 0 && py < N) {
+          // Circular brush stroke shape
+          if (dx*dx + dy*dy <= size*size) {
+            customDrawingMask[py * N + px] = 1.0;
+          }
+        }
+      }
+    }
+  }
+  
+  function setupDrawingListeners() {
+    const handleDrawStart = (e) => {
+      if (activePreset !== 'custom') return;
+      isDrawing = true;
+      let brushSz = parseInt(document.getElementById('brush-size').value);
+      let pos = getMousePos(canvasAperture, e);
+      drawBrushStroke(pos, brushSz);
+      calculateAndRender();
+    };
+    
+    const handleDrawMove = (e) => {
+      if (!isDrawing || activePreset !== 'custom') return;
+      let brushSz = parseInt(document.getElementById('brush-size').value);
+      let pos = getMousePos(canvasAperture, e);
+      drawBrushStroke(pos, brushSz);
+      calculateAndRender();
+    };
+    
+    const handleDrawEnd = () => {
+      isDrawing = false;
+    };
+    
+    // Mouse Events
+    canvasAperture.addEventListener('mousedown', handleDrawStart);
+    canvasAperture.addEventListener('mousemove', handleDrawMove);
+    window.addEventListener('mouseup', handleDrawEnd);
+    
+    // Touch Events for Mobile / Tablet support
+    canvasAperture.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        handleDrawStart(e.touches[0]);
+      }
+      e.preventDefault();
+    });
+    canvasAperture.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        handleDrawMove(e.touches[0]);
+      }
+      e.preventDefault();
+    });
+    canvasAperture.addEventListener('touchend', handleDrawEnd);
+  }
+  
+  function clearCustomDrawing() {
+    customDrawingMask.fill(0.0);
+    calculateAndRender();
+  }
+  
+  function loadCustomPreset(type) {
+    customDrawingMask.fill(0.0);
+    if (type === 'FRESNEL') {
+      // Draw letters 'F' 'R' 'E' 'S' 'N' 'E' 'L' on custom grid
+      ctxAperture.fillStyle = '#ffffff';
+      ctxAperture.fillRect(0, 0, N, N);
+      // We can draw directly into customDrawingMask programmatically using helper
+      
+      const drawText = (txt, size, y) => {
+        let offscreen = document.createElement('canvas');
+        offscreen.width = N;
+        offscreen.height = N;
+        let oCtx = offscreen.getContext('2d');
+        oCtx.fillStyle = 'black';
+        oCtx.fillRect(0, 0, N, N);
+        oCtx.font = `bold ${size}px 'Outfit', 'Inter', sans-serif`;
+        oCtx.fillStyle = 'white';
+        oCtx.textAlign = 'center';
+        oCtx.textBaseline = 'middle';
+        oCtx.fillText(txt, N/2, y);
+        
+        let imgData = oCtx.getImageData(0, 0, N, N).data;
+        for (let i = 0; i < N * N; i++) {
+          if (imgData[i * 4] > 127) {
+            customDrawingMask[i] = 1.0;
+          }
+        }
+      };
+      
+      drawText("FRESNEL", 40, N/2 - 12);
+      drawText("OPTICS", 32, N/2 + 25);
+    }
+    calculateAndRender();
+  }
+
+  /* ==========================================================================
+     3D INTERACTIVE MESH ROTATIONS
+     ========================================================================== */
+  let isDragging3d = false;
+  let prevMouseX = 0;
+  let prevMouseY = 0;
+  
+  function setup3DListeners() {
+    canvas3d.addEventListener('mousedown', (e) => {
+      isDragging3d = true;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging3d) return;
+      let dx = e.clientX - prevMouseX;
+      let dy = e.clientY - prevMouseY;
+      
+      yaw3d += dx * 0.007;
+      pitch3d += dy * 0.007;
+      // Clamp pitch to prevent flipping upside down
+      pitch3d = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, pitch3d));
+      
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+      
+      // Fast re-render only the 3D surface plot on drag to feel smooth
+      render3DSurface();
+    });
+    
+    window.addEventListener('mouseup', () => {
+      isDragging3d = false;
+    });
+  }
+
+  /* ==========================================================================
+     PHYSICS COMPUTATION CORE
+     ========================================================================== */
+     
+  function generateApertureMask() {
+    apertureMask.fill(0.0);
+    const dx = gridL / N;
+    
+    if (activePreset === 'slit') {
+      const halfW = param_slitWidth / 2;
+      const halfH = (gridL * 0.8) / 2; // Long vertical slit
+      for (let y = 0; y < N; y++) {
+        let py = (y - N/2) * dx;
+        if (Math.abs(py) <= halfH) {
+          for (let x = 0; x < N; x++) {
+            let px = (x - N/2) * dx;
+            if (Math.abs(px) <= halfW) {
+              apertureMask[y * N + x] = 1.0;
+            }
+          }
+        }
+      }
+    }
+    else if (activePreset === 'double') {
+      const halfW = param_doubleSlitWidth / 2;
+      const halfH = (gridL * 0.8) / 2;
+      const d = param_doubleSlitSep;
+      for (let y = 0; y < N; y++) {
+        let py = (y - N/2) * dx;
+        if (Math.abs(py) <= halfH) {
+          for (let x = 0; x < N; x++) {
+            let px = (x - N/2) * dx;
+            // Slit 1 center at -d/2, Slit 2 center at +d/2
+            let dist1 = Math.abs(px + d/2);
+            let dist2 = Math.abs(px - d/2);
+            if (dist1 <= halfW || dist2 <= halfW) {
+              apertureMask[y * N + x] = 1.0;
+            }
+          }
+        }
+      }
+    }
+    else if (activePreset === 'rect') {
+      const halfX = param_rectWidthX / 2;
+      const halfY = param_rectWidthY / 2;
+      for (let y = 0; y < N; y++) {
+        let py = (y - N/2) * dx;
+        if (Math.abs(py) <= halfY) {
+          for (let x = 0; x < N; x++) {
+            let px = (x - N/2) * dx;
+            if (Math.abs(px) <= halfX) {
+              apertureMask[y * N + x] = 1.0;
+            }
+          }
+        }
+      }
+    }
+    else if (activePreset === 'circle') {
+      const R2 = param_circleRadius * param_circleRadius;
+      for (let y = 0; y < N; y++) {
+        let py = (y - N/2) * dx;
+        for (let x = 0; x < N; x++) {
+          let px = (x - N/2) * dx;
+          if (px*px + py*py <= R2) {
+            apertureMask[y * N + x] = 1.0;
+          }
+        }
+      }
+    }
+    else if (activePreset === 'triangle') {
+      // Equilateral triangle centered at origin
+      const s = param_triangleSide;
+      const h = s * Math.sqrt(3) / 2;
+      const cY = -h / 6; // Centroid correction
+      const topY = cY + 2/3 * h;
+      const botY = cY - 1/3 * h;
+      
+      for (let y = 0; y < N; y++) {
+        let py = -(y - N/2) * dx; // Flip y for standard coordinate system
+        if (py >= botY && py <= topY) {
+          // Half-width at current Y height
+          let maxH = (topY - py) / h * (s / 2);
+          for (let x = 0; x < N; x++) {
+            let px = (x - N/2) * dx;
+            if (Math.abs(px) <= maxH) {
+              apertureMask[y * N + x] = 1.0;
+            }
+          }
+        }
+      }
+    }
+    else if (activePreset === 'zone') {
+      // Fresnel Zone Plate design formula: r_n^2 = n * f * lambda
+      // Designed for the active wavelength lambda to make it focal!
+      const f = param_zoneFocal;
+      const rings = param_zoneRings;
+      const maxR = Math.sqrt(rings * f * lambda);
+      
+      for (let y = 0; y < N; y++) {
+        let py = (y - N/2) * dx;
+        for (let x = 0; x < N; x++) {
+          let px = (x - N/2) * dx;
+          let r2 = px*px + py*py;
+          let r = Math.sqrt(r2);
+          if (r <= maxR) {
+            // Find which zone it lands in
+            let n = Math.floor(r2 / (lambda * f));
+            if (n % 2 === 0) {
+              apertureMask[y * N + x] = 1.0; // Transparent even zones
+            }
+          }
+        }
+      }
+    }
+    else if (activePreset === 'custom') {
+      // Copy custom drawing board
+      apertureMask.set(customDrawingMask);
+    }
+  }
+  
+  function propagateNearField() {
+    // 1. Setup complex array fields for input field
+    const uRe = new Float32Array(N * N);
+    const uIm = new Float32Array(N * N);
+    
+    // Copy the aperture mask directly to real part, imaginary is zero
+    uRe.set(apertureMask);
+    
+    // 2. Perform 2D Forward FFT to convert to Frequency Domain
+    fft2D(uRe, uIm, N, false);
+    
+    // 3. Multiply by Transfer Function (Angular Spectrum Method Propagator)
+    const df = 1 / gridL; // Frequency spacing
+    
+    // Band limit limit frequency to prevent aliasing
+    const fNyquist = N / (2 * gridL);
+    const fLimitASM = gridL / (2 * lambda * distanceZ);
+    const fLimit = Math.min(fNyquist, fLimitASM);
+    const fLimit2 = fLimit * fLimit;
+    
+    for (let row = 0; row < N; row++) {
+      // Spatial frequency fy
+      let fy = (row < N/2) ? (row * df) : ((row - N) * df);
+      let fy2 = fy * fy;
+      
+      for (let col = 0; col < N; col++) {
+        // Spatial frequency fx
+        let fx = (col < N/2) ? (col * df) : ((col - N) * df);
+        let fx2 = fx * fx;
+        
+        let freq2 = fx2 + fy2;
+        let idx = row * N + col;
+        
+        if (freq2 <= fLimit2 && distanceZ > 0) {
+          // Phase angle for Transfer Function
+          let phi = -Math.PI * lambda * distanceZ * freq2;
+          let cosP = Math.cos(phi);
+          let sinP = Math.sin(phi);
+          
+          let re = uRe[idx];
+          let im = uIm[idx];
+          
+          // Complex multiplication: U_new = U * H
+          uRe[idx] = re * cosP - im * sinP;
+          uIm[idx] = re * sinP + im * cosP;
+        } else if (distanceZ > 0) {
+          // Cut off frequencies above band limit to avoid aliasing artifacts
+          uRe[idx] = 0;
+          uIm[idx] = 0;
+        }
+        // If distanceZ is 0, transfer function is identity (no change to fields)
+      }
+    }
+    
+    // 4. Perform 2D Inverse FFT to retrieve spatial field
+    fft2D(uRe, uIm, N, true);
+    
+    // 5. Calculate intensities
+    for (let i = 0; i < N * N; i++) {
+      screenIntensity[i] = uRe[i]*uRe[i] + uIm[i]*uIm[i];
+    }
+  }
+
+  /* ==========================================================================
+     VISUAL RENDERING ENGINES
+     ========================================================================== */
+     
+  function renderAperture() {
+    let W = canvasAperture.width;
+    let H = canvasAperture.height;
+    let imgData = ctxAperture.createImageData(W, H);
+    let d = imgData.data;
+    
+    // Read the laser colors
+    let wlNm = parseInt(document.getElementById('param-wl').value);
+    let lColor = wlToRGB(wlNm);
+    
+    for (let y = 0; y < H; y++) {
+      // Map canvas pixel index directly to N x N grid
+      let gridY = Math.floor(y / H * N);
+      for (let x = 0; x < W; x++) {
+        let gridX = Math.floor(x / W * N);
+        let maskVal = apertureMask[gridY * N + gridX];
+        let idx = (y * W + x) * 4;
+        
+        if (maskVal > 0.05) {
+          // Transparent regions glow slightly in laser color
+          d[idx] = Math.round(lColor[0] * 0.9 + 25.5);
+          d[idx+1] = Math.round(lColor[1] * 0.9 + 25.5);
+          d[idx+2] = Math.round(lColor[2] * 0.9 + 25.5);
+          d[idx+3] = 255;
+        } else {
+          // Blocked regions are deep dark gray
+          d[idx] = 12;
+          d[idx+1] = 16;
+          d[idx+2] = 28;
+          d[idx+3] = 255;
+        }
+      }
+    }
+    
+    ctxAperture.putImageData(imgData, 0, 0);
+  }
+  
+  function getScaledIntensity(val, maxI) {
+    if (maxI === 0) return 0;
+    let norm = val / maxI;
+    if (scaleMode === 'lin') {
+      return norm;
+    } else if (scaleMode === 'gamma') {
+      return Math.pow(norm, 0.4);
+    } else if (scaleMode === 'log') {
+      // Log representation for HDR (boost weak fringes)
+      const c = 100;
+      return Math.log10(1 + c * norm) / Math.log10(1 + c);
+    }
+    return norm;
+  }
+  
+  function renderScreen() {
+    let W = canvasScreen.width;
+    let H = canvasScreen.height;
+    let imgData = ctxScreen.createImageData(W, H);
+    let d = imgData.data;
+    
+    // Find peak intensity
+    let maxI = 0;
+    for (let i = 0; i < N * N; i++) {
+      if (screenIntensity[i] > maxI) maxI = screenIntensity[i];
+    }
+    
+    // Laser colors
+    let wlNm = parseInt(document.getElementById('param-wl').value);
+    let laserCol = wlToRGB(wlNm);
+    
+    for (let canvasY = 0; canvasY < H; canvasY++) {
+      // Display Zoom calculation around the grid center
+      let normY = (canvasY - H / 2) / H; // ranges from -0.5 to 0.5
+      let zoomedY = normY / displayZoom; // ranges from -0.5/zoom to 0.5/zoom
+      let gridY = Math.floor((zoomedY + 0.5) * N);
+      
+      for (let canvasX = 0; canvasX < W; canvasX++) {
+        let normX = (canvasX - W / 2) / W;
+        let zoomedX = normX / displayZoom;
+        let gridX = Math.floor((zoomedX + 0.5) * N);
+        
+        let rVal = 0, gVal = 0, bVal = 0;
+        let idx = (canvasY * W + canvasX) * 4;
+        
+        if (gridX >= 0 && gridX < N && gridY >= 0 && gridY < N) {
+          let I = screenIntensity[gridY * N + gridX];
+          let scale = getScaledIntensity(I, maxI);
+          scale = Math.max(0, Math.min(1, scale));
+          
+          if (colorMode === 'laser') {
+            rVal = Math.round(laserCol[0] * scale);
+            gVal = Math.round(laserCol[1] * scale);
+            bVal = Math.round(laserCol[2] * scale);
+          } else if (colorMode === 'thermal') {
+            // Magma Heatmap (Black -> Purple -> Pink -> Orange -> Yellow -> White)
+            rVal = Math.round(Math.min(255, Math.pow(scale, 1.5) * 350));
+            gVal = Math.round(Math.min(255, Math.pow(scale, 2.5) * 255 + (scale > 0.6 ? (scale - 0.6) * 350 : 0)));
+            bVal = Math.round(Math.min(255, scale * 100 + (scale > 0.45 ? (scale - 0.45) * 280 : 0)));
+          } else {
+            // Grayscale
+            rVal = gVal = bVal = Math.round(scale * 255);
+          }
+        } else {
+          // Out of grid bounds (black screen boundary)
+          rVal = gVal = bVal = 0;
+        }
+        
+        d[idx] = rVal;
+        d[idx+1] = gVal;
+        d[idx+2] = bVal;
+        d[idx+3] = 255;
+      }
+    }
+    
+    ctxScreen.putImageData(imgData, 0, 0);
+  }
+  
+  function render1DPlot() {
+    let W = canvas1d.width;
+    let H = canvas1d.height;
+    
+    // Clear canvas
+    ctx1d.fillStyle = '#02040a';
+    ctx1d.fillRect(0, 0, W, H);
+    
+    // Laser details
+    let wlNm = parseInt(document.getElementById('param-wl').value);
+    let lColor = wlToRGB(wlNm);
+    let rgbStr = `rgb(${lColor[0]}, ${lColor[1]}, ${lColor[2]})`;
+    
+    // Get center row slice of intensities
+    const sliceY = N / 2;
+    let maxI = 0;
+    for (let i = 0; i < N; i++) {
+      let val = screenIntensity[sliceY * N + i];
+      if (val > maxI) maxI = val;
+    }
+    
+    // Scale viewport boundaries
+    let padLeft = 45;
+    let padRight = 15;
+    let padTop = 15;
+    let padBot = 30;
+    
+    let plotW = W - padLeft - padRight;
+    let plotH = H - padTop - padBot;
+    
+    // Draw Grid Lines & Axes
+    ctx1d.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx1d.lineWidth = 1;
+    ctx1d.font = '10px var(--font-mono)';
+    ctx1d.fillStyle = 'var(--text-muted)';
+    ctx1d.textAlign = 'right';
+    ctx1d.textBaseline = 'middle';
+    
+    // Y-Axis Ticks & Grid (Relative Intensity)
+    for (let i = 0; i <= 4; i++) {
+      let normY = i / 4;
+      let y = padTop + plotH - normY * plotH;
+      ctx1d.beginPath();
+      ctx1d.moveTo(padLeft, y);
+      ctx1d.lineTo(W - padRight, y);
+      ctx1d.stroke();
+      ctx1d.fillText(normY.toFixed(2), padLeft - 8, y);
+    }
+    
+    // X-Axis Position in mm
+    ctx1d.textAlign = 'center';
+    ctx1d.textBaseline = 'top';
+    const gridHalfW = (gridL * 1000) / 2; // in mm
+    
+    // Grid markers every 1 mm or 0.5 mm depending on scale
+    let tickStep = 1.0;
+    if (gridHalfW <= 1.5) tickStep = 0.5;
+    else if (gridHalfW > 6.0) tickStep = 2.0;
+    
+    for (let xMm = -Math.floor(gridHalfW); xMm <= gridHalfW; xMm += tickStep) {
+      // Normalized position from -0.5 to 0.5
+      let normX = xMm / (gridL * 1000); 
+      let zoomedX = normX * displayZoom;
+      // If tick lands inside zoomed screen viewport, draw it
+      if (Math.abs(zoomedX) <= 0.5) {
+        let canvasX = padLeft + (zoomedX + 0.5) * plotW;
+        ctx1d.beginPath();
+        ctx1d.moveTo(canvasX, padTop);
+        ctx1d.lineTo(canvasX, padTop + plotH);
+        ctx1d.stroke();
+        ctx1d.fillText(xMm.toFixed(1) + " mm", canvasX, padTop + plotH + 6);
+      }
+    }
+    
+    // --- Draw the actual intensity slice curve ---
+    ctx1d.beginPath();
+    let hasPoint = false;
+    
+    for (let i = 0; i < N; i++) {
+      let normX = (i - N / 2) / N; // from -0.5 to 0.5
+      let zoomedX = normX * displayZoom;
+      
+      if (Math.abs(zoomedX) <= 0.5) {
+        let canvasX = padLeft + (zoomedX + 0.5) * plotW;
+        let I = screenIntensity[sliceY * N + i];
+        let scaleI = getScaledIntensity(I, maxI);
+        let canvasY = padTop + plotH - scaleI * plotH;
+        
+        if (!hasPoint) {
+          ctx1d.moveTo(canvasX, canvasY);
+          hasPoint = true;
+        } else {
+          ctx1d.lineTo(canvasX, canvasY);
+        }
+      }
+    }
+    
+    ctx1d.strokeStyle = rgbStr;
+    ctx1d.lineWidth = 2.0;
+    ctx1d.stroke();
+    
+    // Fill area under curve with matching visual gradient
+    ctx1d.lineTo(padLeft + plotW, padTop + plotH);
+    ctx1d.lineTo(padLeft, padTop + plotH);
+    ctx1d.closePath();
+    
+    let grad = ctx1d.createLinearGradient(0, padTop, 0, padTop + plotH);
+    grad.addColorStop(0, `rgba(${lColor[0]}, ${lColor[1]}, ${lColor[2]}, 0.35)`);
+    grad.addColorStop(1, `rgba(${lColor[0]}, ${lColor[1]}, ${lColor[2]}, 0.0)`);
+    ctx1d.fillStyle = grad;
+    ctx1d.fill();
+    
+    // --- Draw Geometric Slit / Aperture Shadow Boundaries (dashed lines) ---
+    let boundX1 = null, boundX2 = null;
+    if (activePreset === 'slit') {
+      boundX1 = -param_slitWidth / 2;
+      boundX2 = param_slitWidth / 2;
+    } else if (activePreset === 'double') {
+      // Draw boundaries of both slits
+      let w = param_doubleSlitWidth;
+      let d = param_doubleSlitSep;
+      boundX1 = -d/2 - w/2;
+      boundX2 = -d/2 + w/2;
+      let boundX3 = d/2 - w/2;
+      let boundX4 = d/2 + w/2;
+      drawBoundaryMarker(boundX3, plotW, padLeft, plotH, padTop);
+      drawBoundaryMarker(boundX4, plotW, padLeft, plotH, padTop);
+    } else if (activePreset === 'rect') {
+      boundX1 = -param_rectWidthX / 2;
+      boundX2 = param_rectWidthX / 2;
+    } else if (activePreset === 'circle') {
+      boundX1 = -param_circleRadius;
+      boundX2 = param_circleRadius;
+    } else if (activePreset === 'triangle') {
+      boundX1 = -param_triangleSide / 2;
+      boundX2 = param_triangleSide / 2;
+    }
+    
+    if (boundX1 !== null) drawBoundaryMarker(boundX1, plotW, padLeft, plotH, padTop);
+    if (boundX2 !== null) drawBoundaryMarker(boundX2, plotW, padLeft, plotH, padTop);
+  }
+  
+  function drawBoundaryMarker(physicalVal, plotW, padLeft, plotH, padTop) {
+    let norm = physicalVal / gridL; // -0.5 to 0.5
+    let zoomed = norm * displayZoom;
+    if (Math.abs(zoomed) <= 0.5) {
+      let canvasX = padLeft + (zoomed + 0.5) * plotW;
+      ctx1d.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx1d.lineWidth = 1;
+      ctx1d.setLineDash([4, 4]);
+      ctx1d.beginPath();
+      ctx1d.moveTo(canvasX, padTop - 5);
+      ctx1d.lineTo(canvasX, padTop + plotH);
+      ctx1d.stroke();
+      ctx1d.setLineDash([]);
+      
+      // Label text
+      ctx1d.fillStyle = 'var(--text-dim)';
+      ctx1d.font = '8px var(--font-mono)';
+      ctx1d.fillText("Slit Edge", canvasX, padTop - 8);
+    }
+  }
+  
+  function render3DSurface() {
+    let W = canvas3d.width;
+    let H = canvas3d.height;
+    
+    // Clear canvas
+    ctx3d.fillStyle = '#02040a';
+    ctx3d.fillRect(0, 0, W, H);
+    
+    // Laser Details
+    let wlNm = parseInt(document.getElementById('param-wl').value);
+    let laserCol = wlToRGB(wlNm);
+    
+    // Downsample screenIntensity grid to make drawing fast
+    // 32 x 32 points is perfect for clear mesh without visual clutter or lag
+    const M = 32;
+    const step = N / M;
+    
+    // Find peak intensity
+    let maxI = 0;
+    for (let i = 0; i < N * N; i++) {
+      if (screenIntensity[i] > maxI) maxI = screenIntensity[i];
+    }
+    
+    // 1. Calculate projected 3D coordinates for all grid points
+    let gridZ = Array.from({length: M + 1}, () => new Float32Array(M + 1));
+    let projGrid = Array.from({length: M + 1}, () => Array(M + 1));
+    let depthArray = Array.from({length: M + 1}, () => new Float32Array(M + 1));
+    
+    let cosY = Math.cos(yaw3d), sinY = Math.sin(yaw3d);
+    let cosP = Math.cos(pitch3d), sinP = Math.sin(pitch3d);
+    
+    let cx = W / 2;
+    let cy = H / 2 - 10;
+    let zoom3d = Math.min(W, H) * 0.44;
+    
+    for (let r = 0; r <= M; r++) {
+      // Map range to centered coordinates [-1.0, 1.0]
+      let normY = (r - M/2) / (M/2);
+      let gY = Math.min(N - 1, Math.max(0, Math.floor(r * step)));
+      
+      for (let c = 0; c <= M; c++) {
+        let normX = (c - M/2) / (M/2);
+        let gX = Math.min(N - 1, Math.max(0, Math.floor(c * step)));
+        
+        let rawI = screenIntensity[gY * N + gX];
+        let scaledI = getScaledIntensity(rawI, maxI);
+        gridZ[r][c] = scaledI;
+        
+        // 3D coordinate vectors (X, Y, Z)
+        let X3 = normX;
+        let Y3 = normY;
+        let Z3 = scaledI * 0.55; // Scale height down slightly for projection beauty
+        
+        // Rotate around Y-axis (Yaw)
+        let x1 = X3 * cosY - Y3 * sinY;
+        let y1 = X3 * sinY + Y3 * cosY;
+        let z1 = Z3;
+        
+        // Rotate around X-axis (Pitch)
+        let x2 = x1;
+        let y2 = y1 * cosP - z1 * sinP;
+        let z2 = y1 * sinP + z1 * cosP; // z2 acts as depth coordinate
+        
+        depthArray[r][c] = z2;
+        projGrid[r][c] = {
+          x: cx + x2 * zoom3d,
+          y: cy + y2 * zoom3d
+        };
+      }
+    }
+    
+    // 2. Build cell mesh list
+    let cells = [];
+    for (let r = 0; r < M; r++) {
+      for (let c = 0; c < M; c++) {
+        // Average depth of cell's 4 vertices
+        let d1 = depthArray[r][c];
+        let d2 = depthArray[r+1][c];
+        let d3 = depthArray[r+1][c+1];
+        let d4 = depthArray[r][c+1];
+        let avgDepth = (d1 + d2 + d3 + d4) / 4;
+        cells.push({r: r, c: c, depth: avgDepth});
+      }
+    }
+    
+    // 3. Sort cells back-to-front (Painter's Algorithm) for hidden surface removal
+    // Cells with LARGER depth values are further away, so draw them first (descending order)
+    cells.sort((a, b) => b.depth - a.depth);
+    
+    // 4. Render sorted grid cells
+    ctx3d.lineWidth = 0.8;
+    
+    cells.forEach(cell => {
+      let r = cell.r;
+      let c = cell.c;
+      
+      let p1 = projGrid[r][c];
+      let p2 = projGrid[r+1][c];
+      let p3 = projGrid[r+1][c+1];
+      let p4 = projGrid[r][c+1];
+      
+      ctx3d.beginPath();
+      ctx3d.moveTo(p1.x, p1.y);
+      ctx3d.lineTo(p2.x, p2.y);
+      ctx3d.lineTo(p3.x, p3.y);
+      ctx3d.lineTo(p4.x, p4.y);
+      ctx3d.closePath();
+      
+      // Paint solid opaque background to block out wireframe lines behind this cell
+      ctx3d.fillStyle = '#060812';
+      ctx3d.fill();
+      
+      // Calculate average height of the cell for color intensity mapping
+      let avgH = (gridZ[r][c] + gridZ[r+1][c] + gridZ[r+1][c+1] + gridZ[r][c+1]) / 4;
+      
+      if (colorMode === 'laser') {
+        ctx3d.strokeStyle = `rgba(${laserCol[0]}, ${laserCol[1]}, ${laserCol[2]}, ${0.12 + 0.88 * avgH})`;
+      } else if (colorMode === 'thermal') {
+        // Magma heatmap interpolation for wireframe colors
+        let rCol = Math.round(Math.min(255, Math.pow(avgH, 1.2) * 350));
+        let gCol = Math.round(Math.min(255, Math.pow(avgH, 2.2) * 255));
+        let bCol = Math.round(Math.min(255, avgH * 150 + 20));
+        ctx3d.strokeStyle = `rgba(${rCol}, ${gCol}, ${bCol}, ${0.2 + 0.8 * avgH})`;
+      } else {
+        ctx3d.strokeStyle = `rgba(255, 255, 255, ${0.12 + 0.85 * avgH})`;
+      }
+      ctx3d.stroke();
+    });
+  }
+
+  /* ==========================================================================
+     SIMULATION RUNNER & SYSTEM METRICS
+     ========================================================================== */
+     
+  function calculateAndRender() {
+    // 1. Calculate aperture layout
+    generateApertureMask();
+    
+    // 2. Propagate waves using FFT ASM
+    propagateNearField();
+    
+    // 3. Render 2D Views
+    renderAperture();
+    renderScreen();
+    
+    // 4. Render 1D Profile Plot
+    render1DPlot();
+    
+    // 5. Render 3D Surface Mesh
+    render3DSurface();
+    
+    // 6. Update physical metrics panel
+    updatePhysicalMetrics();
+  }
+  
+  function updatePhysicalMetrics() {
+    // Spatial dimension calculations
+    let aVal = 0; // Characteristic aperture width size
+    let labelF = '';
+    
+    if (activePreset === 'slit') {
+      aVal = param_slitWidth;
+      labelF = "w";
+    } else if (activePreset === 'double') {
+      aVal = param_doubleSlitWidth;
+      labelF = "w";
+    } else if (activePreset === 'rect') {
+      aVal = param_rectWidthX;
+      labelF = "w_x";
+    } else if (activePreset === 'circle') {
+      aVal = param_circleRadius * 2; // Diameter
+      labelF = "D";
+    } else if (activePreset === 'triangle') {
+      aVal = param_triangleSide;
+      labelF = "s";
+    } else if (activePreset === 'zone') {
+      // For zone plates, focal spot occurs at design focal length
+      aVal = Math.sqrt(param_zoneRings * param_zoneFocal * lambda) * 2; // Outer diameter
+      labelF = "D";
+    }
+    
+    // 1. Fresnel Number F = a^2 / (lambda * z)
+    let fNum = 0;
+    if (distanceZ > 0) {
+      fNum = (aVal * aVal) / (lambda * distanceZ);
+    } else {
+      fNum = Infinity;
+    }
+    
+    // Display Fresnel number
+    const fNumEl = document.getElementById('metric-fresnel-num');
+    if (fNum === Infinity) {
+      fNumEl.innerText = "∞";
+    } else {
+      fNumEl.innerText = fNum.toFixed(2);
+    }
+    
+    // 2. Grid spatial resolution Δx in micrometers
+    let deltaX = (gridL / N) * 1e6;
+    document.getElementById('metric-resolution').innerText = deltaX.toFixed(1) + " μm";
+    
+    // 3. Classification of Regime and Alerts
+    const regimeEl = document.getElementById('metric-regime');
+    const alertEl = document.getElementById('regime-alert');
+    
+    if (distanceZ === 0) {
+      regimeEl.innerText = "Aperture Plan";
+      alertEl.className = "status-alert alert-info";
+      alertEl.innerHTML = `<strong>Aperture plane (z = 0):</strong> The wave field matches the geometric mask exactly. No propagation has occurred yet.`;
+    }
+    else if (fNum > 15) {
+      regimeEl.innerText = "Geometric Shadow";
+      alertEl.className = "status-alert alert-info";
+      alertEl.innerHTML = `<strong>Geometric Optics Regime:</strong> The Fresnel Number is very high (F = ${fNum.toFixed(1)}). The field resembles the clean geometric silhouette of the aperture, and diffraction fringes are confined to the sharp boundaries.`;
+    }
+    else if (fNum >= 0.1) {
+      regimeEl.innerText = "Near-Field (Fresnel)";
+      alertEl.className = "status-alert alert-info";
+      
+      let extraInfo = '';
+      if (activePreset === 'zone' && Math.abs(distanceZ - param_zoneFocal) < 0.015) {
+        extraInfo = " <strong>Crucial focus:</strong> You are near the design focal length! Note the extreme peak intensity focal spot at the center of the screen.";
+      } else if (activePreset === 'circle') {
+        extraInfo = " Note the central bright peak inside the circular shadow block, representing <strong>Poisson's spot</strong>.";
+      }
+      
+      alertEl.innerHTML = `<strong>Fresnel Near-Field Regime:</strong> Wave curvature is prominent (F = ${fNum.toFixed(2)}). Severe boundary ringing, shape distortions, and interference patterns are active.${extraInfo}`;
+    }
+    else {
+      regimeEl.innerText = "Far-Field (Fraunhofer)";
+      alertEl.className = "status-alert alert-warning";
+      alertEl.innerHTML = `<strong>Fraunhofer Far-Field Regime:</strong> The Fresnel Number is small (F = ${fNum.toFixed(3)}). The geometric shape of the aperture is lost, and the pattern has transformed into its angular Fourier Transform representation (lobes).`;
+    }
+  }
+
+  /* ==========================================================================
+     WINDOW INITIALIZATION
+     ========================================================================== */
+     
+  function resizeCanvases() {
+    // Set internal resolution of drawing canvases to match layout sizes or constant N
+    let container = document.getElementById('aperture-canvas-container');
+    let size = container.clientWidth;
+    
+    canvasAperture.width = size;
+    canvasAperture.height = size;
+    canvasScreen.width = size;
+    canvasScreen.height = size;
+    
+    // Set 1D Plot layout size
+    let plotContainer = document.querySelector('.plot-container');
+    canvas1d.width = plotContainer.clientWidth;
+    canvas1d.height = plotContainer.clientHeight;
+    
+    // Set 3D Plot layout size
+    let container3d = document.getElementById('container-3d');
+    canvas3d.width = container3d.clientWidth;
+    canvas3d.height = container3d.clientHeight;
+  }
+  
+  window.addEventListener('load', () => {
+    resizeCanvases();
+    
+    // Initialize presets & listeners
+    setPreset('slit');
+    setupDrawingListeners();
+    setup3DListeners();
+    onParamChange(); // Triggers first calculation and renders everything
+  });
+  
+  // Re-scale canvases on window size changes
+  window.addEventListener('resize', () => {
+    resizeCanvases();
+    calculateAndRender();
+  });
+</script>
+
+</body>
+</html>
