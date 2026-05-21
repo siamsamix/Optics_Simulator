@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diffraction Simulator</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0d0d2b, #1a1a3d);
+      --card-bg: rgba(255, 255, 255, 0.12);
+      --card-blur: blur(12px);
+      --primary: #6c63ff;
+      --secondary: #ff6b6b;
+      --text: #e0e0e0;
+    }
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--bg-gradient);
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      overflow: hidden;
+    }
+    .container {
+      text-align: center;
+      backdrop-filter: var(--card-blur);
+      background: var(--card-bg);
+      border-radius: 1rem;
+      padding: 3rem 2rem;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      max-width: 90%;
+    }
+    h1 {
+      margin-bottom: 2rem;
+      font-size: 2.2rem;
+    }
+    .btn {
+      display: inline-block;
+      margin: 1rem;
+      padding: 0.9rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 0.5rem;
+      transition: transform 0.2s ease, background 0.3s ease;
+    }
+    .fraunhofer { background: var(--primary); }
+    .fresnel { background: var(--secondary); }
+    .btn:hover {
+      transform: translateY(-3px);
+      opacity: 0.9;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8rem; }
+      .btn { padding: 0.8rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Select Diffraction Simulation</h1>
+    <a href="./Fraunhofer/main.html" class="btn fraunhofer">Fraunhofer Diffraction</a>
+    <a href="./Fresnel/main.html" class="btn fresnel">Fresnel Diffraction</a>
+  </div>
+</body>
+</html>
